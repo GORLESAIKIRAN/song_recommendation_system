@@ -18,7 +18,10 @@ class CelebrityRecognitionTests(unittest.TestCase):
     def test_emotion_labels_match_model_output_order(self):
         self.assertEqual(
             app.EMOTION_LABELS,
-            ("Angry", "Disgusted", "Fear", "Happy", "Neutral", "Sad", "Surprise"),
+            (
+                "Angry", "Disgusted", "Fear", "Happy", "Neutral", "Sad",
+                "Surprise",
+            ),
         )
 
     def test_health_reports_spotify_configuration(self):

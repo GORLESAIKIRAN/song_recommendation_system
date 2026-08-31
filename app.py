@@ -44,7 +44,9 @@ def _extract_face_candidates_from_array(image_array):
     if len(image_array.shape) == 3:
         gray = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
 
-    cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+    cascade_path = (
+        cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+    )
     cascade = cv2.CascadeClassifier(cascade_path)
     if cascade.empty():
         return [image_array]
@@ -93,7 +95,9 @@ def _predict_from_array(image_array):
 
         pil_image = Image.fromarray(rgb_image.astype("uint8"))
         resized = pil_image.resize((224, 224))
-        values = np.expand_dims(keras_image.img_to_array(resized) / 255.0, axis=0)
+        values = np.expand_dims(
+            keras_image.img_to_array(resized) / 255.0, axis=0
+        )
         predictions = _load_hero_model().predict(values, verbose=0)[0]
         label_by_index = _build_label_lookup(_load_class_indices())
         index = int(np.argmax(predictions))
@@ -177,6 +181,28 @@ def _fallback_tracks(query, limit=12):
     from urllib.parse import quote
     from urllib.request import urlopen
 
+    endpoint = "https://itunes.apple.com/search?media=music&limit="
+    endpoint += str(limit) + "&term=" + quote(query)
+    with urlopen(endpoint, timeout=10) as response:
+        data = json.load(response)
+    tracks = []
+    for item in data.get("results", [])[:limit]:
+        artist = item.get("artistName", "Unknown artist")
+        name = item.get("trackName", "Unknown track")
+        tracks.append({
+            "name": name,
+            "artist": artist,
+            "url": "https://open.spotify.com/search/" + quote(
+                f"{name} {artist}"
+            ),
+            "album_art": item.get("artworkUrl100", "").replace(
+                "100x100", "300x300"
+            ),
+            "preview_url": item.get("previewUrl"),
+        })
+    if tracks:
+        return tracks
+
     endpoint = "https://api.deezer.com/search?q=" + quote(query)
     with urlopen(endpoint, timeout=10) as response:
         data = json.load(response)
@@ -195,10 +221,8 @@ def _fallback_tracks(query, limit=12):
     if tracks:
         return tracks
 
-    endpoint = (
-        "https://itunes.apple.com/search?media=music&limit="
-        + str(limit) + "&term=" + quote(query + " songs")
-    )
+    endpoint = "https://itunes.apple.com/search?media=music&limit="
+    endpoint += str(limit) + "&term=" + quote(query + " songs")
     with urlopen(endpoint, timeout=10) as response:
         data = json.load(response)
     for item in data.get("results", [])[:limit]:
@@ -302,25 +326,27 @@ def detect_emotion():
                 gray, 1.05, 3, minSize=(30, 30)
             )
         if len(faces) == 0:
-            return _error("No face detected. Move closer and try again.")
-        x, y, width, height = faces[0]
-        x, y, width, height = (
-            int(x / detection_scale), int(y / detection_scale),
-            int(width / detection_scale), int(height / detection_scale)
-        )
-        padding = int(max(width, height) * 0.15)
-        x = max(0, x - padding)
-        y = max(0, y - padding)
-        width = min(gray.shape[1] - x, width + padding * 2)
-        height = min(gray.shape[0] - y, height + padding * 2)
-        face = cv2.resize(
-            gray[y:y + height, x:x + width], (48, 48)
-        ).astype("float32")
+            x, y, width, height = 0, 0, gray.shape[1], gray.shape[0]
+        else:
+            x, y, width, height = faces[0]
+            x, y, width, height = (
+                int(x / detection_scale), int(y / detection_scale),
+                int(width / detection_scale), int(height / detection_scale)
+            )
+            padding = int(max(width, height) * 0.15)
+            x = max(0, x - padding)
+            y = max(0, y - padding)
+            width = min(gray.shape[1] - x, width + padding * 2)
+            height = min(gray.shape[0] - y, height + padding * 2)
+        face = cv2.resize(gray[y:y + height, x:x + width], (48, 48))
+        face = face.astype("float32") / 255.0
         prediction = _load_emotion_model().predict(
             np.expand_dims(face, axis=(0, -1)), verbose=0
         )[0]
         index = int(np.argmax(prediction))
-        emotion = EMOTION_LABELS[index] if index < len(EMOTION_LABELS) else "Unknown"
+        emotion = (
+            EMOTION_LABELS[index] if index < len(EMOTION_LABELS) else "Unknown"
+        )
         return jsonify({
             "emotion": emotion,
             "confidence": float(prediction[index]),
