@@ -160,20 +160,8 @@ def _predict_emotion(gray):
     import cv2
     import numpy as np
 
-    onnx_path = ROOT / "emotion-ferplus-8.onnx"
-    if onnx_path.exists():
-        session = _load_ferplus_model()
-        resized = cv2.resize(gray, (64, 64)).astype("float32") / 255.0
-        output = session.run(
-            None, {session.get_inputs()[0].name: resized[None, None, :, :]}
-        )[0][0]
-        probabilities = np.exp(output - np.max(output))
-        probabilities /= probabilities.sum()
-        index = int(np.argmax(probabilities))
-        return FERPLUS_LABELS[index], float(probabilities[index])
-
     model = _load_emotion_model()
-    face = cv2.resize(gray, (48, 48)).astype("float32") / 255.0
+    face = cv2.resize(gray, (48, 48)).astype("float32")
     prediction = model.predict(
         np.expand_dims(face, axis=(0, -1)), verbose=0
     )[0]

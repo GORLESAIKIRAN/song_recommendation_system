@@ -29,6 +29,29 @@ class CelebrityRecognitionTests(unittest.TestCase):
         self.assertNotIn("Contempt", app.FERPLUS_LABELS)
         self.assertEqual(len(app.FERPLUS_LABELS), 8)
 
+    def test_emotion_prediction_uses_trained_keras_model(self):
+        class FakeModel:
+            output_shape = (None, 7)
+
+            def predict(self, values, verbose=0):
+                self.values = values
+                result = np.zeros((1, 7), dtype=np.float32)
+                result[0, 3] = 1.0
+                return result
+
+        fake_model = FakeModel()
+        original = app._emotion_model
+        app._emotion_model = fake_model
+        try:
+            emotion, confidence = app._predict_emotion(
+                np.full((80, 80), 255, dtype=np.uint8)
+            )
+        finally:
+            app._emotion_model = original
+        self.assertEqual(emotion, "Happy")
+        self.assertEqual(confidence, 1.0)
+        self.assertEqual(float(fake_model.values.max()), 255.0)
+
     def test_health_reports_spotify_configuration(self):
         with app.app.test_client() as client:
             response = client.get("/health")
