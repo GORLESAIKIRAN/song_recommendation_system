@@ -769,17 +769,22 @@
             });
             $('songResult').replaceChildren(list)
         }
+        let searchRequest;
         async function api(path, options) {
             const response = await fetch(path, options);
-            const data = await response.json();
+            const contentType = response.headers.get('content-type') || '';
+            const data = contentType.includes('application/json') ? await response.json() : {};
             if (!response.ok) throw Error(data.error || 'Something went wrong');
             return data
         }
         async function search(keyword) {
+            if (searchRequest) searchRequest.abort();
+            searchRequest = new AbortController();
             $('resultCount').textContent = 'Searching...';
             try {
                 const data = await api('/recommend_song', {
                     method: 'POST',
+                    signal: searchRequest.signal,
                     headers: {
                         'Content-Type': 'application/json'
                     },
@@ -789,7 +794,7 @@
                 });
                 renderTracks(data.tracks, data.title)
             } catch (error) {
-                showError(error.message)
+                if (error.name !== 'AbortError') showError(error.message)
             }
         }
         $('status').textContent = 'Music desk ready';
@@ -846,6 +851,11 @@
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0);
             canvas.toBlob(async blob => {
+                if (!blob) {
+                    $('emotionResult').textContent = 'Could not capture the camera image.';
+                    $('detectEmotion').disabled = false;
+                    return
+                }
                 const form = new FormData();
                 form.append('image', blob, 'camera.jpg');
                 try {

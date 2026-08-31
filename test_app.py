@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 import numpy as np
 
 import app
@@ -29,6 +30,18 @@ class CelebrityRecognitionTests(unittest.TestCase):
             response = client.get("/health")
         self.assertEqual(response.status_code, 200)
         self.assertIn("spotify_configured", response.get_json())
+        self.assertIn("tensorflow_available", response.get_json())
+
+    def test_keyword_search_passes_the_exact_user_query(self):
+        with patch.object(
+            app, "_spotify_tracks", return_value=[]
+        ) as search_tracks:
+            with app.app.test_client() as client:
+                response = client.post(
+                    "/recommend_song", json={"keyword": "Prabhas"}
+                )
+        self.assertEqual(response.status_code, 404)
+        search_tracks.assert_called_once_with("Prabhas")
 
 
 if __name__ == "__main__":

@@ -267,7 +267,19 @@ def health():
         os.getenv("SPOTIPY_CLIENT_ID")
         and os.getenv("SPOTIPY_CLIENT_SECRET")
     )
-    return jsonify({"ok": True, "spotify_configured": configured})
+    return jsonify({
+        "ok": True,
+        "spotify_configured": configured,
+        "tensorflow_available": _tensorflow_available(),
+    })
+
+
+def _tensorflow_available():
+    try:
+        import tensorflow  # noqa: F401
+    except ImportError:
+        return False
+    return True
 
 
 @app.route("/predict", methods=["POST"])
