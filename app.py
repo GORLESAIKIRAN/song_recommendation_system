@@ -1,4 +1,5 @@
 import os
+import json
 import uuid
 from pathlib import Path
 
@@ -16,8 +17,20 @@ _emotion_model = None
 _hero_model = None
 _class_indices = None
 _spotify = None
-EMOTION_LABELS = (
-    "Angry", "Disgusted", "Fear", "Happy", "Neutral", "Sad", "Surprise"
+EMOTION_LABELS = {
+    "angry": "Angry",
+    "disgusted": "Disgust",
+    "disgust": "Disgust",
+    "fear": "Fearful",
+    "fearful": "Fearful",
+    "happy": "Happy",
+    "neutral": "Neutral",
+    "sad": "Sad",
+    "surprise": "Surprise",
+    "surprised": "Surprise",
+}
+CANONICAL_EMOTION_LABELS = (
+    "Angry", "Disgust", "Fearful", "Happy", "Neutral", "Sad", "Surprise"
 )
 
 
@@ -125,6 +138,24 @@ def _load_emotion_model():
         from tensorflow.keras.models import load_model
         _emotion_model = load_model(ROOT / "face_model.h5", compile=False)
     return _emotion_model
+
+
+def _emotion_labels_for_model(model):
+    labels_path = ROOT / "emotion_labels.json"
+    if labels_path.exists():
+        labels = [
+            EMOTION_LABELS.get(name.lower(), name.title())
+            for name in json.loads(labels_path.read_text(encoding="utf-8"))
+        ]
+    else:
+        labels = list(CANONICAL_EMOTION_LABELS)
+    output_count = int(model.output_shape[-1])
+    if output_count != len(labels):
+        raise RuntimeError(
+            f"Emotion model has {output_count} outputs; "
+            f"expected {len(labels)}."
+        )
+    return labels
 
 
 def _get_spotify():
@@ -352,13 +383,12 @@ def detect_emotion():
             height = min(gray.shape[0] - y, height + padding * 2)
         face = cv2.resize(gray[y:y + height, x:x + width], (48, 48))
         face = face.astype("float32") / 255.0
-        prediction = _load_emotion_model().predict(
+        model = _load_emotion_model()
+        prediction = model.predict(
             np.expand_dims(face, axis=(0, -1)), verbose=0
         )[0]
         index = int(np.argmax(prediction))
-        emotion = (
-            EMOTION_LABELS[index] if index < len(EMOTION_LABELS) else "Unknown"
-        )
+        emotion = _emotion_labels_for_model(model)[index]
         return jsonify({
             "emotion": emotion,
             "confidence": float(prediction[index]),

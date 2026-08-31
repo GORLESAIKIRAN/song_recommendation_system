@@ -5,6 +5,7 @@ emotion_data/test/<emotion>/*.jpg. Download FER-2013 from Kaggle first and
 arrange/export its images into this structure.
 """
 import argparse
+import json
 from pathlib import Path
 
 import tensorflow as tf
@@ -67,6 +68,9 @@ def main():
     )]
     model.fit(train, validation_data=validation, epochs=args.epochs,
               callbacks=callbacks)
+    Path("emotion_labels.json").write_text(
+        json.dumps(names, indent=2), encoding="utf-8"
+    )
     loss, accuracy = model.evaluate(test, verbose=1)
     print({"classes": names, "test_loss": float(loss),
            "test_accuracy": float(accuracy)})
