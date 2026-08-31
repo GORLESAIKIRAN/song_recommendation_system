@@ -25,12 +25,17 @@ class CelebrityRecognitionTests(unittest.TestCase):
             ),
         )
 
+    def test_ferplus_returns_only_supported_emotions(self):
+        self.assertNotIn("Contempt", app.FERPLUS_LABELS)
+        self.assertEqual(len(app.FERPLUS_LABELS), 8)
+
     def test_health_reports_spotify_configuration(self):
         with app.app.test_client() as client:
             response = client.get("/health")
         self.assertEqual(response.status_code, 200)
         self.assertIn("spotify_configured", response.get_json())
         self.assertIn("tensorflow_available", response.get_json())
+        self.assertIn("onnx_emotion_available", response.get_json())
 
     def test_keyword_search_passes_the_exact_user_query(self):
         with patch.object(
@@ -38,10 +43,11 @@ class CelebrityRecognitionTests(unittest.TestCase):
         ) as search_tracks:
             with app.app.test_client() as client:
                 response = client.post(
-                    "/recommend_song", json={"keyword": "Prabhas"}
+                    "/recommend_song",
+                    json={"keyword": "Prabhas", "language": "Telugu"},
                 )
         self.assertEqual(response.status_code, 404)
-        search_tracks.assert_called_once_with("Prabhas")
+        search_tracks.assert_called_once_with("Prabhas Telugu songs")
 
 
 if __name__ == "__main__":

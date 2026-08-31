@@ -32,6 +32,11 @@ EMOTION_LABELS = {
 CANONICAL_EMOTION_LABELS = (
     "Angry", "Disgust", "Fearful", "Happy", "Neutral", "Sad", "Surprise"
 )
+FERPLUS_LABELS = (
+    "Neutral", "Happy", "Surprise", "Sad",
+    "Angry", "Disgust", "Fearful", "Neutral"
+)
+_emotion_onnx = None
 
 
 def _build_label_lookup(labels):
@@ -138,6 +143,42 @@ def _load_emotion_model():
         from tensorflow.keras.models import load_model
         _emotion_model = load_model(ROOT / "face_model.h5", compile=False)
     return _emotion_model
+
+
+def _load_ferplus_model():
+    global _emotion_onnx
+    if _emotion_onnx is None:
+        import onnxruntime as ort
+        _emotion_onnx = ort.InferenceSession(
+            str(ROOT / "emotion-ferplus-8.onnx"),
+            providers=["CPUExecutionProvider"],
+        )
+    return _emotion_onnx
+
+
+def _predict_emotion(gray):
+    import cv2
+    import numpy as np
+
+    onnx_path = ROOT / "emotion-ferplus-8.onnx"
+    if onnx_path.exists():
+        session = _load_ferplus_model()
+        resized = cv2.resize(gray, (64, 64)).astype("float32") / 255.0
+        output = session.run(
+            None, {session.get_inputs()[0].name: resized[None, None, :, :]}
+        )[0][0]
+        probabilities = np.exp(output - np.max(output))
+        probabilities /= probabilities.sum()
+        index = int(np.argmax(probabilities))
+        return FERPLUS_LABELS[index], float(probabilities[index])
+
+    model = _load_emotion_model()
+    face = cv2.resize(gray, (48, 48)).astype("float32") / 255.0
+    prediction = model.predict(
+        np.expand_dims(face, axis=(0, -1)), verbose=0
+    )[0]
+    index = int(np.argmax(prediction))
+    return _emotion_labels_for_model(model)[index], float(prediction[index])
 
 
 def _emotion_labels_for_model(model):
@@ -302,6 +343,7 @@ def health():
         "ok": True,
         "spotify_configured": configured,
         "tensorflow_available": _tensorflow_available(),
+        "onnx_emotion_available": (ROOT / "emotion-ferplus-8.onnx").exists(),
     })
 
 
@@ -383,15 +425,10 @@ def detect_emotion():
             height = min(gray.shape[0] - y, height + padding * 2)
         face = cv2.resize(gray[y:y + height, x:x + width], (48, 48))
         face = face.astype("float32") / 255.0
-        model = _load_emotion_model()
-        prediction = model.predict(
-            np.expand_dims(face, axis=(0, -1)), verbose=0
-        )[0]
-        index = int(np.argmax(prediction))
-        emotion = _emotion_labels_for_model(model)[index]
+        emotion, confidence = _predict_emotion(gray[y:y + height, x:x + width])
         return jsonify({
             "emotion": emotion,
-            "confidence": float(prediction[index]),
+            "confidence": confidence,
         })
     except Exception as exc:
         return _error(f"Emotion detection failed: {exc}", 500)
@@ -427,19 +464,22 @@ def recommend_by_emotion():
 def recommend_by_keyword():
     data = request.get_json(silent=True) or {}
     keyword = str(data.get("keyword", "")).strip()
+    language = str(data.get("language", "")).strip()
     if not keyword:
         return _error("Enter a celebrity, mood, or song keyword.")
     try:
-        tracks = _spotify_tracks(keyword)
+        query = f"{keyword} {language} songs" if language else keyword
+        tracks = _spotify_tracks(query)
         if not tracks:
             return _error("No songs found for that search.", 404)
         return jsonify({
             "tracks": tracks,
-            "title": f"Songs related to {keyword}",
+            "title": f"{keyword} {language} songs" if language
+            else f"Songs related to {keyword}",
         })
     except Exception as exc:
         return _error(str(exc), 503)
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=int(os.getenv("PORT", "5000")), debug=False)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")), debug=False)

@@ -789,7 +789,8 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        keyword
+                        keyword,
+                        language: $('language').value
                     })
                 });
                 renderTracks(data.tracks, data.title)
