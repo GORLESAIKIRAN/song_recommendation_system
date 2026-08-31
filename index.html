@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GSK RAGA SYSTEM | AI song discovery</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700;800&display=swap');
+        :root {
+            --ink: #17211f;
+            --muted: #65716c;
+            --paper: #f5f1e8;
+            --mint: #c9e9d3;
+            --coral: #ec765f;
+            --line: #d8d8cb;
+            --green: #16834b
+        }
+        
+        * {
+            box-sizing: border-box
+        }
+        
+        body {
+            margin: 0;
+            color: var(--ink);
+            font-family: 'DM Sans', sans-serif;
+            background: var(--paper);
+            background-image: radial-gradient(#d7dfd0 1px, transparent 1px);
+            background-size: 22px 22px
+        }
+        
+        header {
+            padding: 30px max(24px, calc((100vw - 1200px)/2));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--line);
+            background: rgba(245, 241, 232, .9)
+        }
+        
+        .brand {
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase
+        }
+        
+        .brand b {
+            color: var(--coral);
+            font-family: 'Playfair Display';
+            font-size: 1.4em
+        }
+        
+        .status {
+            font-size: .8rem;
+            color: var(--muted)
+        }
+        
+        main {
+            max-width: 1200px;
+            margin: auto;
+            padding: 58px 24px
+        }
+        
+        .intro {
+            max-width: 700px;
+            margin-bottom: 38px
+        }
+        
+        .kicker {
+            color: var(--coral);
+            font-size: .8rem;
+            font-weight: 700;
+            letter-spacing: .14em;
+            text-transform: uppercase
+        }
+        
+        .intro h1 {
+            font: 800 clamp(2.6rem, 7vw, 5.8rem)/.95 'Playfair Display', serif;
+            margin: 13px 0
+        }
+        
+        .intro p {
+            color: var(--muted);
+            font-size: 1.05rem;
+            max-width: 580px
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px
+        }
+        
+        .card {
+            min-height: 330px;
+            padding: 26px;
+            border: 1px solid var(--line);
+            background: #fffdf7;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between
+        }
+        
+        .card:nth-child(1) {
+            background: linear-gradient(135deg, #f7d5c8, #fffdf7)
+        }
+        
+        .card:nth-child(2) {
+            background: linear-gradient(135deg, #cbe8d3, #fffdf7)
+        }
+        
+        .card:nth-child(3) {
+            background: linear-gradient(135deg, #d6e1eb, #fffdf7)
+        }
+        
+        .card:nth-child(4) {
+            background: linear-gradient(135deg, #f1dfb5, #fffdf7)
+        }
+        
+        .num {
+            font-size: .75rem;
+            letter-spacing: .12em;
+            color: var(--muted)
+        }
+        
+        h2 {
+            font: 800 2rem 'Playfair Display';
+            margin: 12px 0 5px
+        }
+        
+        .desc {
+            color: var(--muted);
+            margin: 0 0 16px
+        }
+        
+        .actions {
+            display: flex;
+            gap: 9px;
+            align-items: center;
+            flex-wrap: wrap
+        }
+        
+        button,
+        .file-label {
+            border: 0;
+            padding: 11px 15px;
+            background: var(--ink);
+            color: white;
+            font: 700 .86rem 'DM Sans';
+            cursor: pointer
+        }
+        
+        button:hover,
+        .file-label:hover {
+            background: var(--coral)
+        }
+        
+        button.secondary {
+            background: transparent;
+            color: var(--ink);
+            border: 1px solid var(--ink)
+        }
+        
+        input[type=file] {
+            display: none
+        }
+        
+        textarea {
+            width: 100%;
+            height: 74px;
+            border: 1px solid var(--line);
+            padding: 12px;
+            font: inherit;
+            resize: vertical;
+            background: #fffdf7
+        }
+        
+        .camera {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            background: #1e2925;
+            margin: 8px 0
+        }
+        
+        .result {
+            font-size: .88rem;
+            min-height: 22px;
+            color: var(--muted)
+        }
+        
+        .result strong {
+            color: var(--ink)
+        }
+        
+        .dock {
+            margin-top: 48px;
+            padding: 24px 0;
+            border-top: 2px solid var(--ink)
+        }
+        
+        .dock-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline
+        }
+        
+        .dock h2 {
+            font-size: 2.3rem;
+            margin: 0
+        }
+        
+        .song-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 20px
+        }
+        
+        .track {
+            display: flex;
+            gap: 12px;
+            padding: 13px;
+            background: #fffdf7;
+            border: 1px solid var(--line);
+            min-width: 0
+        }
+        
+        .album-art {
+            width: 64px;
+            height: 64px;
+            object-fit: cover;
+            background: #dfe4d9;
+            flex: none
+        }
+        
+        .track-info {
+            min-width: 0
+        }
+        
+        .song-name {
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+        
+        .artist {
+            color: var(--muted);
+            font-size: .82rem;
+            margin: 4px 0 9px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+        
+        .spotify-link {
+            color: var(--green);
+            font-size: .78rem;
+            font-weight: 700;
+            text-decoration: none
+        }
+        
+        .error {
+            color: #b03f31;
+            background: #fae0d9;
+            padding: 12px;
+            margin-top: 16px
+        }
+        
+        .hero-preview {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            margin-top: 12px;
+            display: none
+        }
+        
+        @media(max-width:760px) {
+            header {
+                padding: 22px 18px
+            }
+            .status {
+                display: none
+            }
+            main {
+                padding: 40px 18px
+            }
+            .grid {
+                grid-template-columns: 1fr
+            }
+            .card {
+                min-height: 300px
+            }
+            .song-list {
+                grid-template-columns: 1fr
+            }
+            .intro h1 {
+                font-size: 3.5rem
+            }
+        }
+    </style>
+    <style>
+        .card {
+            border-radius: 26px;
+            background-size: cover!important;
+            background-position: center!important;
+            box-shadow: 0 10px 24px rgba(23, 33, 31, .2);
+            transition: transform .35s ease, box-shadow .35s ease, filter .35s ease
+        }
+        
+        .card:hover {
+            transform: translateY(-8px) rotate(-.4deg);
+            box-shadow: 0 20px 38px rgba(23, 33, 31, .28);
+            filter: saturate(1.12)
+        }
+        
+        .card:nth-child(1) {
+            background-image: linear-gradient(135deg, rgba(236, 118, 95, .38), rgba(23, 33, 31, .08)), url('static/images/image%203.jpeg')!important
+        }
+        
+        .card:nth-child(2) {
+            background-image: linear-gradient(135deg, rgba(22, 131, 75, .38), rgba(23, 33, 31, .08)), url('static/images/image.jpeg')!important
+        }
+        
+        .card:nth-child(3) {
+            background-image: linear-gradient(135deg, rgba(41, 93, 126, .42), rgba(23, 33, 31, .08)), url('static/images/image%202.jpg')!important
+        }
+        
+        .card:nth-child(4) {
+            background-image: linear-gradient(135deg, rgba(170, 111, 35, .42), rgba(23, 33, 31, .08)), url('static/images/image%201.jpg')!important
+        }
+        
+        .card:before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, .1), rgba(23, 33, 31, .08));
+            pointer-events: none
+        }
+        
+        .card>div {
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            padding: 0;
+            box-shadow: none;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, .85)
+        }
+        
+        .card h2,
+        .card .num {
+            color: #fff;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, .85)
+        }
+        
+        .card .num {
+            color: #fff3bd
+        }
+        
+        .card .desc {
+            color: #fff;
+            font-weight: 600;
+            text-shadow: 0 2px 9px rgba(0, 0, 0, .9)
+        }
+        
+        .card .result {
+            color: #fff;
+            text-shadow: 0 2px 9px rgba(0, 0, 0, .9)
+        }
+        
+        .card>.actions {
+            background: transparent
+        }
+        
+        .card select {
+            border: 0;
+            border-radius: 12px;
+            padding: 10px;
+            background: #fff;
+            color: var(--ink)
+        }
+        
+        .track {
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(23, 33, 31, .08)
+        }
+        
+        .track:hover {
+            transform: translateY(-4px);
+            border-color: var(--coral);
+            box-shadow: 0 10px 22px rgba(23, 33, 31, .14)
+        }
+        
+        .track audio {
+            width: 100%;
+            height: 30px;
+            margin: 4px 0 6px
+        }
+        
+        .dock {
+            margin-top: 48px!important;
+            padding: 30px!important;
+            border: 1px solid rgba(255, 255, 255, .7)!important;
+            border-radius: 30px!important;
+            background: linear-gradient(120deg, #123b4a 0%, #176a62 55%, #315b78 100%)!important;
+            box-shadow: 0 18px 38px rgba(18, 59, 74, .25)!important
+        }
+        
+        .dock h2 {
+            color: #fff0b3!important;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, .35)
+        }
+        
+        .site-footer {
+            padding: 24px 0 8px;
+            color: #236552;
+            text-align: center;
+            font-size: .78rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase
+        }
+        
+        .team-credit {
+            margin-bottom: 10px;
+            color: #b57725;
+            font-size: .82rem;
+            letter-spacing: .04em;
+            text-transform: none
+        }
+        
+        .team-credit:after {
+            content: '';
+            display: block;
+            width: 56px;
+            height: 2px;
+            margin: 10px auto 0;
+            background: #ed6c4f;
+            border-radius: 2px
+        }
+        
+        body {
+            background: linear-gradient(135deg, #fff0e4 0%, #eef9e9 48%, #e8f0ff 100%)!important;
+            background-attachment: fixed!important
+        }
+        
+        .brand {
+            color: #1c6a55!important;
+            letter-spacing: .1em
+        }
+        
+        .brand b {
+            color: #ed6c4f!important
+        }
+        
+        .brand:after {
+            content: ' SYSTEM';
+            color: #bb7a25;
+            font-size: .72em
+        }
+        
+        .intro h1 {
+            background: linear-gradient(100deg, #d65a43, #1a8064 48%, #b57725);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent
+        }
+        
+        .intro p {
+            color: #40534d;
+            font-weight: 500
+        }
+        
+        .kicker {
+            color: #c05a3f
+        }
+        
+        .card:nth-child(1) {
+            --accent: #eb725b
+        }
+        
+        .card:nth-child(2) {
+            --accent: #208a63
+        }
+        
+        .card:nth-child(3) {
+            --accent: #3976a5
+        }
+        
+        .card:nth-child(4) {
+            --accent: #bd812b
+        }
+        
+        .card .num {
+            color: #fff2a8
+        }
+        
+        .card button,
+        .card .file-label {
+            background: var(--accent);
+            border-radius: 12px
+        }
+        
+        .card button.secondary {
+            background: rgba(255, 255, 255, .25);
+            color: #fff;
+            border-color: #fff
+        }
+        
+        .card select {
+            color: #173d35;
+            font-weight: 700
+        }
+        
+        .dock .status {
+            color: #477065
+        }
+        
+        .status {
+            color: #d7f3e4!important
+        }
+        
+        .brand {
+            color: #f8fff9!important
+        }
+        
+        .brand b {
+            color: #ffd166!important
+        }
+        
+        .intro h1 {
+            letter-spacing: 0
+        }
+        
+        .intro p {
+            color: #355c50!important
+        }
+        
+        .card:nth-child(1) {
+            --card-title: #fff4b0;
+            --card-copy: #ffd9cf;
+            --card-result: #ffe8a0;
+            --card-number: #fff0a8;
+        }
+        
+        .card:nth-child(2) {
+            --card-title: #dfffe8;
+            --card-copy: #f1fff8;
+            --card-result: #c1ffd8;
+            --card-number: #f5ff99;
+        }
+        
+        .card:nth-child(3) {
+            --card-title: #d7eeff;
+            --card-copy: #edf8ff;
+            --card-result: #bfe5ff;
+            --card-number: #ffe28c;
+        }
+        
+        .card:nth-child(4) {
+            --card-title: #ffe9a8;
+            --card-copy: #fff2c8;
+            --card-result: #ffd886;
+            --card-number: #fffdd5;
+        }
+        
+        .card h2,
+        .card .desc,
+        .card .result,
+        .card .num {
+            text-shadow: 0 2px 8px rgba(255, 255, 255, .72), 0 2px 8px rgba(18, 45, 38, .6)!important
+        }
+        
+        .card h2 {
+            font-size: 2.15rem!important
+        }
+        
+        .card:nth-child(1) h2 {
+            color: var(--card-title)!important
+        }
+        
+        .card:nth-child(1) .desc {
+            color: var(--card-copy)!important
+        }
+        
+        .card:nth-child(1) .result {
+            color: var(--card-result)!important
+        }
+        
+        .card:nth-child(1) .num {
+            color: var(--card-number)!important
+        }
+        
+        .card:nth-child(2) h2 {
+            color: var(--card-title)!important
+        }
+        
+        .card:nth-child(2) .desc {
+            color: var(--card-copy)!important
+        }
+        
+        .card:nth-child(2) .result {
+            color: var(--card-result)!important
+        }
+        
+        .card:nth-child(2) .num {
+            color: var(--card-number)!important
+        }
+        
+        .card:nth-child(3) h2 {
+            color: var(--card-title)!important
+        }
+        
+        .card:nth-child(3) .desc {
+            color: var(--card-copy)!important
+        }
+        
+        .card:nth-child(3) .result {
+            color: var(--card-result)!important
+        }
+        
+        .card:nth-child(3) .num {
+            color: var(--card-number)!important
+        }
+        
+        .card:nth-child(4) h2 {
+            color: var(--card-title)!important
+        }
+        
+        .card:nth-child(4) .desc {
+            color: var(--card-copy)!important
+        }
+        
+        .card:nth-child(4) .result {
+            color: var(--card-result)!important
+        }
+        
+        .card:nth-child(4) .num {
+            color: var(--card-number)!important
+        }
+        
+        .dock .status {
+            color: #b9ffe1!important
+        }
+        
+        .dock .result {
+            color: #e3fff4!important
+        }
+        
+        .dock .track .song-name {
+            color: #146b4b!important
+        }
+        
+        .dock .track .artist {
+            color: #5b6d68!important
+        }
+        
+        header {
+            background: linear-gradient(105deg, #123c35, #176b55 58%, #23836d)!important;
+            border-bottom: 3px solid #f1bd55!important;
+            box-shadow: 0 8px 24px rgba(18, 60, 53, .22)!important
+        }
+        
+        body {
+            background: radial-gradient(circle at 8% 12%, rgba(255, 211, 125, .4), transparent 28%), radial-gradient(circle at 92% 76%, rgba(123, 205, 180, .35), transparent 30%), linear-gradient(135deg, #fff5e5 0%, #e7f6ed 48%, #e7efff 100%)!important;
+            background-attachment: fixed!important
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="brand"><b>GSK</b> RAGA</div>
+        <div class="status" id="status">Connecting to your music desk...</div>
+    </header>
+    <main>
+        <section class="intro">
+            <div class="kicker">Four ways in</div>
+            <h1>Find the song<br>that feels right.</h1>
+            <p>Recognise a Telugu star, read a mood, speak a thought, or type a name. Your next soundtrack appears below.</p>
+        </section>
+        <section class="grid">
+            <article class="card">
+                <div><span class="num">01 / LOOK</span>
+                    <h2>Celebrity lens</h2>
+                    <p class="desc">Upload a portrait and discover that artist's top tracks.</p><input id="imageInput" type="file" accept="image/*"><label class="file-label" for="imageInput">Choose portrait</label><img id="heroPreview" class="hero-preview" alt="Selected portrait"></div>
+                <div
+                    class="actions"><button id="recogniseBtn">Recognise</button><span class="result" id="imageResult"></span></div>
+            </article>
+            <article class="card">
+                <div><span class="num">02 / FEEL</span>
+                    <h2>Face & feeling</h2>
+                    <p class="desc">Let the camera read the room, then choose your language.</p><video id="camera" class="camera" autoplay muted playsinline></video>
+                    <div class="actions"><button id="startCamera">Start camera</button><button class="secondary" id="detectEmotion">Read mood</button><button class="secondary" id="stopCamera">Stop</button></div>
+                </div>
+                <div class="actions"><span class="result" id="emotionResult">No mood read yet.</span><select id="language" aria-label="Song language"><option>Telugu</option><option>Hindi</option><option>English</option></select><button id="moodSongs">Find songs</button></div>
+            </article>
+            <article class="card">
+                <div><span class="num">03 / SAY</span>
+                    <h2>Voice search</h2>
+                    <p class="desc">Say a celebrity, mood, or song idea. The browser turns it into a search.</p>
+                    <div class="result" id="voiceResult">Ready when you are.</div>
+                </div>
+                <div class="actions"><button id="voiceBtn">Start listening</button><button class="secondary" id="stopVoice">Stop</button></div>
+            </article>
+            <article class="card">
+                <div><span class="num">04 / TYPE</span>
+                    <h2>Text search</h2>
+                    <p class="desc">Search the Spotify catalogue by celebrity, feeling, or exact song.</p><textarea id="textInput" placeholder="Try: Prabhas, happy Telugu songs..."></textarea></div>
+                <div class="actions"><button id="textBtn">Search Spotify</button><span class="result" id="textResult"></span></div>
+            </article>
+        </section>
+        <section class="dock">
+            <div class="dock-head">
+                <h2 id="resultsTitle">Your listening list</h2><span class="status" id="resultCount"></span></div>
+            <div id="songResult">
+                <p class="result">Recommendations will land here.</p>
+            </div>
+        </section>
+        <footer class="site-footer">
+            <div class="team-credit">Developed by G Sai Kiran, K Pranav, K Prakash, and Konda Reddy</div>
+            <div>&copy; 2026 GSK RAGA SYSTEM. All rights reserved.</div>
+        </footer>
+    </main>
+    <script>
+        const $ = id => document.getElementById(id);
+        let stream, recognition, emotion;
+
+        function showError(message) {
+            $('resultCount').textContent = '';
+            $('songResult').innerHTML = '<div class="error">' + message + '</div>';
+        }
+
+        function renderTracks(tracks, title) {
+            $('resultsTitle').textContent = title;
+            $('resultCount').textContent = tracks.length + ' tracks';
+            if (!tracks.length) {
+                showError('No tracks found for that search.');
+                return
+            }
+            const list = document.createElement('div');
+            list.className = 'song-list';
+            tracks.forEach(track => {
+                const item = document.createElement('article');
+                item.className = 'track';
+                const art = document.createElement('img');
+                art.className = 'album-art';
+                art.src = track.album_art || 'static/images/image.jpeg';
+                art.alt = '';
+                const info = document.createElement('div');
+                info.className = 'track-info';
+                info.innerHTML = '<div class="song-name"></div><div class="artist"></div><a class="spotify-link" target="_blank" rel="noopener">Open in Spotify</a>';
+                info.querySelector('.song-name').textContent = track.name;
+                info.querySelector('.artist').textContent = track.artist;
+                info.querySelector('a').href = track.url;
+                if (track.preview_url) {
+                    const audio = document.createElement('audio');
+                    audio.controls = true;
+                    audio.src = track.preview_url;
+                    audio.title = 'Play preview';
+                    info.insertBefore(audio, info.querySelector('a'))
+                }
+                item.append(art, info);
+                list.append(item)
+            });
+            $('songResult').replaceChildren(list)
+        }
+        async function api(path, options) {
+            const response = await fetch(path, options);
+            const data = await response.json();
+            if (!response.ok) throw Error(data.error || 'Something went wrong');
+            return data
+        }
+        async function search(keyword) {
+            $('resultCount').textContent = 'Searching...';
+            try {
+                const data = await api('/recommend_song', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        keyword
+                    })
+                });
+                renderTracks(data.tracks, data.title)
+            } catch (error) {
+                showError(error.message)
+            }
+        }
+        $('status').textContent = 'Music desk ready';
+        $('imageInput').onchange = () => {
+            const file = $('imageInput').files[0];
+            if (file) $('heroPreview').src = URL.createObjectURL(file), $('heroPreview').style.display = 'block'
+        };
+        $('recogniseBtn').onclick = async() => {
+            const file = $('imageInput').files[0];
+            if (!file) {
+                $('imageResult').textContent = 'Choose an image first.';
+                return
+            }
+            $('recogniseBtn').disabled = true;
+            $('imageResult').textContent = 'Recognising image...';
+            const form = new FormData();
+            form.append('file', file);
+            try {
+                const data = await api('/predict', {
+                    method: 'POST',
+                    body: form
+                });
+                $('imageResult').innerHTML = '<strong>' + data.hero + '</strong> · ' + (data.confidence * 100).toFixed(1) + '%';
+                search(data.hero)
+            } catch (error) {
+                $('imageResult').textContent = error.message
+            } finally {
+                $('recogniseBtn').disabled = false
+            }
+        };
+        $('startCamera').onclick = async() => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: true
+                });
+                $('camera').srcObject = stream
+            } catch (error) {
+                $('emotionResult').textContent = 'Camera permission is needed.'
+            }
+        };
+        $('stopCamera').onclick = () => {
+            if (stream) stream.getTracks().forEach(track => track.stop()), $('camera').srcObject = null
+        };
+        $('detectEmotion').onclick = async() => {
+            const video = $('camera');
+            if (!video.videoWidth) {
+                $('emotionResult').textContent = 'Start the camera first.';
+                return
+            }
+            $('detectEmotion').disabled = true;
+            $('emotionResult').textContent = 'Reading your mood...';
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            canvas.toBlob(async blob => {
+                const form = new FormData();
+                form.append('image', blob, 'camera.jpg');
+                try {
+                    const data = await api('/detect_emotion', {
+                        method: 'POST',
+                        body: form
+                    });
+                    emotion = data.emotion;
+                    $('emotionResult').textContent = emotion + ' · ' + (data.confidence * 100).toFixed(1) + '%'
+                } catch (error) {
+                    $('emotionResult').textContent = error.message
+                } finally {
+                    $('detectEmotion').disabled = false
+                }
+            }, 'image/jpeg')
+        };
+        $('moodSongs').onclick = () => emotion ? api('/recommend_songs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                emotion,
+                language: $('language').value
+            })
+        }).then(data => renderTracks(data.tracks, data.title)).catch(error => showError(error.message)) : $('emotionResult').textContent = 'Read your mood first.';
+
+        function listen() {
+            const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Speech) {
+                const text = prompt('Type your voice search:');
+                if (text) {
+                    $('voiceResult').textContent = '“' + text + '”';
+                    search(text)
+                }
+                return
+            }
+            recognition = new Speech();
+            recognition.lang = 'en-IN';
+            recognition.onstart = () => $('voiceResult').textContent = 'Listening...';
+            recognition.onresult = event => {
+                const text = event.results[0][0].transcript;
+                $('voiceResult').textContent = '“' + text + '”';
+                search(text)
+            };
+            recognition.onerror = () => $('voiceResult').textContent = 'Could not hear that. Try again.';
+            recognition.start()
+        }
+        $('voiceBtn').onclick = listen;
+        $('stopVoice').onclick = () => recognition && recognition.stop();
+        $('textBtn').onclick = () => {
+            const value = $('textInput').value.trim();
+            value ? search(value) : $('textResult').textContent = 'Enter a search first.'
+        };
+        $('textInput').onkeydown = event => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                $('textBtn').click()
+            }
+        };
+    </script>
+</body>
+
+</html>

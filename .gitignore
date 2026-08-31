@@ -1,0 +1,13 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.cache
+.ipynb_checkpoints/
+.vscode/
+uploads/*
+!.gitkeep
+.env
+.env.*
+*.log

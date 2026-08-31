@@ -1,0 +1,7 @@
+Flask>=3.0,<4
+numpy>=1.26,<3
+Pillow>=10,<12
+opencv-python>=4.9,<5
+spotipy>=2.24,<3
+tensorflow>=2.15,<3; python_version < "3.14"
+gunicorn>=22,<24
